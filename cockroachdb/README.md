@@ -27,13 +27,13 @@ To configure this check for an Agent running on a host:
 
 _Available for Agent versions >6.0_
 
-1. Collecting logs is disabled by default in the Datadog Agent, you need to enable it in `datadog.yaml`:
+1. Collecting logs is disabled by default in the Datadog Agent. Enable it in `datadog.yaml`:
 
    ```yaml
    logs_enabled: true
    ```
 
-2. Add this configuration block to your `cockroachdb.d/conf.yaml` file to start collecting your CockroachDB Logs:
+2. Add this configuration block to your `cockroachdb.d/conf.yaml` file to start collecting your CockroachDB logs:
 
    ```yaml
    logs:
@@ -68,7 +68,7 @@ For containerized environments, see the [Autodiscovery Integration Templates][2]
 
 Collecting logs is disabled by default in the Datadog Agent. To enable it, see the [Docker log collection documentation][11].
 
-Then, set [Log Integrations][12] as Docker labels:
+Then, set [log integrations][12] as Docker labels:
 
 ```yaml
 LABEL "com.datadoghq.ad.logs"='[{"source": "cockroachdb", "service": "<SERVICE_NAME>"}]'
