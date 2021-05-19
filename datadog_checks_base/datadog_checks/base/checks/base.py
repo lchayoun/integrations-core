@@ -194,6 +194,7 @@ class AgentCheck(object):
 
         logger = logging.getLogger('{}.{}'.format(__name__, self.name))
         self.log = CheckLoggingAdapter(logger, self)
+        self.log.debug("hi")
 
         # TODO: Remove with Agent 5
         # Set proxy settings
