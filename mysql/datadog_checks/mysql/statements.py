@@ -53,10 +53,10 @@ class MySQLStatementMetrics(object):
         self._db_hostname = None
         self.log = get_check_logger()
         self._state = StatementMetrics()
-        # full_query_text_cache: limit the ingestion rate of full query text events per query_signature
-        self._full_query_text_cache = TTLCache(
-            maxsize=self._config.statement_samples_config.get('full_query_text_cache_max_size', 10000),
-            ttl=60 * 60 / self._config.statement_samples_config.get('samples_per_hour_per_query', 1),
+        # full_statement_text_cache: limit the ingestion rate of full statement text events per query_signature
+        self._full_statement_text_cache = TTLCache(
+            maxsize=self._config.full_statement_text_cache_max_size,
+            ttl=60 * 60 / self._config.full_statement_text_samples_per_hour_per_query,
         )
 
     def _db_hostname_cached(self):
@@ -165,9 +165,9 @@ class MySQLStatementMetrics(object):
     def _rows_to_fqt_events(self, rows, tags):
         for row in rows:
             query_cache_key = (row['schema_name'], row['query_signature'])
-            if query_cache_key in self._full_query_text_cache:
+            if query_cache_key in self._full_statement_text_cache:
                 continue
-            self._full_query_text_cache[query_cache_key] = True
+            self._full_statement_text_cache[query_cache_key] = True
             row_tags = tags + ["schema:{}".format(row['schema_name'])] if row['schema_name'] else tags
             yield {
                 "timestamp": time.time() * 1000,
