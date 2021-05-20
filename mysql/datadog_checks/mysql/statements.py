@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Tuple
 
 import pymysql
 
+from cachetools import TTLCache
 from datadog_checks.base.log import get_check_logger
 from datadog_checks.base.utils.db.sql import compute_sql_signature
 from datadog_checks.base.utils.db.statement_metrics import StatementMetrics
@@ -19,13 +20,11 @@ try:
 except ImportError:
     from ..stubs import datadog_agent
 
-
 PyMysqlRow = Dict[str, Any]
 Row = Dict[str, Any]
 RowKey = Tuple[Any]
 RowKeyFunction = Callable[[PyMysqlRow], RowKey]
 Metric = Tuple[str, int, List[str]]
-
 
 METRICS_COLUMNS = {
     'count_star',
@@ -54,6 +53,11 @@ class MySQLStatementMetrics(object):
         self._db_hostname = None
         self.log = get_check_logger()
         self._state = StatementMetrics()
+        # full_query_text_cache: limit the ingestion rate of full query text events per query_signature
+        self._full_query_text_cache = TTLCache(
+            maxsize=self._config.statement_samples_config.get('full_query_text_cache_max_size', 10000),
+            ttl=60 * 60 / self._config.statement_samples_config.get('samples_per_hour_per_query', 1),
+        )
 
     def _db_hostname_cached(self):
         if self._db_hostname:
@@ -67,6 +71,14 @@ class MySQLStatementMetrics(object):
             rows = self._collect_per_statement_metrics(db)
             if not rows:
                 return
+
+            for event in self._rows_to_fqt_events(rows, tags):
+                self._check.database_monitoring_query_sample(json.dumps(event, default=default_json_event_encoding))
+
+            # truncate query text to the maximum length supported by metrics tags
+            for row in rows:
+                row['digest_text'] = row['digest_text'][0:200]
+
             payload = {
                 'host': self._db_hostname_cached(),
                 'timestamp': time.time() * 1000,
@@ -74,6 +86,7 @@ class MySQLStatementMetrics(object):
                 'tags': tags,
                 'mysql_rows': rows,
             }
+
             self._check.database_monitoring_query_metrics(json.dumps(payload, default=default_json_event_encoding))
         except Exception:
             self.log.exception('Unable to collect statement metrics due to an error')
@@ -148,3 +161,27 @@ class MySQLStatementMetrics(object):
             normalized_rows.append(normalized_row)
 
         return normalized_rows
+
+    def _rows_to_fqt_events(self, rows, tags):
+        for row in rows:
+            query_cache_key = (row['schema_name'], row['query_signature'])
+            if query_cache_key in self._full_query_text_cache:
+                continue
+            self._full_query_text_cache[query_cache_key] = True
+            row_tags = tags + ["schema:{}".format(row['schema_name'])] if row['schema_name'] else tags
+            yield {
+                "timestamp": time.time() * 1000,
+                "host": self._db_hostname_cached(),
+                "ddsource": "mysql",
+                "ddtags": ",".join(row_tags),
+                "dbm_type": "fqt",
+                "db": {
+                    "instance": row['schema_name'],
+                    "query_signature": row['query_signature'],
+                    "resource_hash": row['query_signature'],
+                    "statement": row['digest_text'],
+                },
+                "mysql": {
+                    "schema": row["schema_name"]
+                }
+            }
