@@ -246,6 +246,13 @@ files:
               type: boolean
               example: false
               display_default: false
+          - name: full_statement_text_samples_per_hour_per_query
+            description: |
+              Sets the rate limit for how many full statement text events will be ingested per hour per normalized
+              statement.
+            value:
+              type: integer
+              example: 1
           - name: statement_samples
             description: Configure collection of statement samples
             options:

@@ -232,6 +232,12 @@ instances:
     #
     # deep_database_monitoring: false
 
+    ## @param full_statement_text_samples_per_hour_per_query - integer - optional - default: 1
+    ## Sets the rate limit for how many full statement text events will be ingested per hour per normalized
+    ## statement.
+    #
+    # full_statement_text_samples_per_hour_per_query: 1
+
     ## Configure collection of statement samples
     #
     statement_samples:
