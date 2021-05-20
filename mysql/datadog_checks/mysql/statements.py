@@ -7,8 +7,8 @@ from contextlib import closing
 from typing import Any, Callable, Dict, List, Tuple
 
 import pymysql
-
 from cachetools import TTLCache
+
 from datadog_checks.base.log import get_check_logger
 from datadog_checks.base.utils.db.sql import compute_sql_signature
 from datadog_checks.base.utils.db.statement_metrics import StatementMetrics
@@ -86,7 +86,6 @@ class MySQLStatementMetrics(object):
                 'tags': tags,
                 'mysql_rows': rows,
             }
-
             self._check.database_monitoring_query_metrics(json.dumps(payload, default=default_json_event_encoding))
         except Exception:
             self.log.exception('Unable to collect statement metrics due to an error')
@@ -181,7 +180,5 @@ class MySQLStatementMetrics(object):
                     "resource_hash": row['query_signature'],
                     "statement": row['digest_text'],
                 },
-                "mysql": {
-                    "schema": row["schema_name"]
-                }
+                "mysql": {"schema": row["schema_name"]},
             }

@@ -3,7 +3,6 @@
 # Licensed under a 3-clause BSD style license (see LICENSE)
 import copy
 import logging
-import pdb
 import subprocess
 import time
 from collections import Counter
@@ -266,18 +265,18 @@ def test_complex_config_replica(aggregator, instance_complex):
 @pytest.mark.integration
 @pytest.mark.usefixtures('dd_environment')
 # these queries are formatted the same way they appear in events_statements_summary_by_digest to make the test simpler
-@pytest.mark.parametrize("query", [
-    "SELECT * FROM `testdb` . `users`",
-    # include one long query that exceeds truncation limit so we can confirm the truncation is happening
-    "SELECT `hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `name` , "
-    "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `age` FROM `testdb` . `users` "
-    "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` JOIN `testdb` . `users` `B` ON "
-    "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `name` = `B` . `name`"
-])
-@pytest.mark.parametrize("default_schema", [
-    None,
-    "testdb"
-])
+@pytest.mark.parametrize(
+    "query",
+    [
+        "SELECT * FROM `testdb` . `users`",
+        # include one long query that exceeds truncation limit so we can confirm the truncation is happening
+        "SELECT `hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `name` , "
+        "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `age` FROM `testdb` . `users` "
+        "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` JOIN `testdb` . `users` `B` ON "
+        "`hello_how_is_it_going_this_is_a_very_long_table_alias_name` . `name` = `B` . `name`",
+    ],
+)
+@pytest.mark.parametrize("default_schema", [None, "testdb"])
 def test_statement_metrics(aggregator, dbm_instance, query, default_schema):
     mysql_check = MySql(common.CHECK_NAME, {}, instances=[dbm_instance])
 
